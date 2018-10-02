@@ -1,0 +1,53 @@
+# Official language image. Look for the different tagged releases at:
+# https://hub.docker.com/r/library/python/tags/
+image: python:latest
+
+before_script:
+  - pip install virtualenv
+  - virtualenv venv
+  - source venv/bin/activate
+  - python setup.py install
+
+test:
+  script:
+  - python -m regicepmutest.test
+
+full_test:
+  stage: test
+  script:
+  - git clone https://gitlab.com/abailon/regice-tests.git
+  - cd regice-tests; ./setup.py install; cd ..
+  - python -m regicetests.test
+  artifacts:
+    paths:
+    - htmlcov
+
+lint:
+  stage: test
+  script:
+  - mkdir out
+  - pip install pylint-exit pylint-json2html
+  - pylint -f json regicepmutest > out/pylint.json || pylint-exit $?
+  - pylint-json2html -o out/pylint.html out/pylint.json
+  artifacts:
+    paths:
+    - out
+
+pages:
+  stage: deploy
+  before_script:
+  - "true"
+  script:
+  - out=$(git name-rev  $(git rev-parse HEAD)); echo "$branch"
+  - remote_branch=$(echo $out | cut -d " " -f 2); echo "$remote_branch"
+  - branch=$(echo $remote_branch | cut -d "/" -f 3); echo "$branch"
+  - mkdir -p public/$branch/coverage
+  - cp -fr htmlcov/* public/$branch/coverage/
+  - cp -fr out/* public/$branch/
+  dependencies:
+  - full_test
+  - lint
+  artifacts:
+    paths:
+    - public
+
