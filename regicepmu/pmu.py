@@ -103,6 +103,18 @@ class PMU:
         self.perf_events = {}
         self.refcount = 0
 
+    @staticmethod
+    def get_pmus(device):
+        """
+            Return a dictionary of device's PMUs
+
+            :param device: A Device object (e.g the owner of the PMU)
+            :return: A dictionary of PMU object
+        """
+        if hasattr(device, 'pmus'):
+            return device.pmus
+        return {}
+
     def _enable(self):
         raise NotImplementedError
 
