@@ -40,6 +40,11 @@ setup(
         "Operating System :: GNU/Linux",
         "Programming Language :: Python :: 3.6",
     ],
+    install_requires=['LibRegice', 'RegiceCommon'],
+    dependency_links=[
+        'git+https://github.com/BayLibre/libregice.git#egg=LibRegice',
+        'git+https://github.com/BayLibre/regice-common.git#egg=RegiceCommon',
+    ],
 )
 
 setup(
