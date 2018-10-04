@@ -48,11 +48,18 @@ class PerfEvent:
             pmu.perf_events[perf_type] = {}
         pmu.perf_events[perf_type][name] = self
 
+    def _enable(self):
+        pass
+
+    def _disable(self):
+        pass
+
     def enable(self):
         """
             Enable the counters and the PMU required to compute
             the perf event.
         """
+        self._enable()
         self.pmu.enable(refcount=True)
 
     def disable(self):
@@ -60,6 +67,8 @@ class PerfEvent:
             Disable the counters and the PMU if there no other event enabled.
         """
         self.pmu.disable(refcount=True)
+        self._disable()
+
 
     def reset(self):
         """

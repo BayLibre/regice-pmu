@@ -35,30 +35,34 @@ from regicepmu.pmu import *
 
 class TestPMUCounter(PMUCounter):
     def __init__(self, pmu, register):
-        super(TestPMUCounter, self).__init__(pmu, register)
-        self.enabled = False
+        super(TestPMUCounter, self).__init__(pmu, register, support_event=True)
+        self.en = False
 
-    def enable(self):
-        super(TestPMUCounter, self).enable()
-        self.enabled = True
+    def _enable(self):
+        self.en = True
 
-    def disable(self):
-        super(TestPMUCounter, self).disable()
-        self.enabled = False
+    def _disable(self):
+        self.en = False
+
+    def _enabled(self):
+        return self.en
+
+    def _set_event(self, event_id):
+        pass
 
 class TestPMU(PMU):
     def __init__(self, device, name):
         super(TestPMU, self).__init__(device, name)
-        self.enabled = False
+        self.en = False
         self.paused = False
         PMUCounter(self, device.TEST1.TESTA)
         PMUCounter(self, device.TEST1.TESTB)
 
     def _enable(self):
-        self.enabled = True
+        self.en = True
 
     def _disable(self):
-        self.enabled = False
+        self.en = False
 
     def pause(self):
         self.paused = True
@@ -89,15 +93,16 @@ class PMUCounterTestCase(unittest.TestCase):
         self.client.memory_restore()
         pmu = TestPMU(self.dev, 'test')
         self.counter = TestPMUCounter(pmu, self.dev.TEST1.TESTA)
+        self.counter.support_event = False
         self.dev.TEST1.TESTA.write(0)
 
     def test_enable(self):
         self.counter.enable()
-        self.assertTrue(self.counter.enabled)
+        self.assertTrue(self.counter.en)
 
     def test_disable(self):
         self.counter.disable()
-        self.assertFalse(self.counter.enabled)
+        self.assertFalse(self.counter.en)
 
     def test_read(self):
         value = self.counter.read()
@@ -128,14 +133,14 @@ class PMUTestCase(unittest.TestCase):
 
     def test_enable(self):
         self.pmu.enable()
-        self.assertTrue(self.pmu.enabled)
+        self.assertTrue(self.pmu.en)
 
         with self.assertRaises(NotImplementedError):
             self.not_implemented_pmu.enable()
 
     def test_disable(self):
         self.pmu.disable()
-        self.assertFalse(self.pmu.enabled)
+        self.assertFalse(self.pmu.en)
 
         with self.assertRaises(NotImplementedError):
             self.not_implemented_pmu.disable()
@@ -176,6 +181,31 @@ class PMUTestCase(unittest.TestCase):
         TESTB = self.pmu.read('TESTB')
         self.assertEqual(TESTB, 0x10000)
 
+    def test_enable_event(self):
+        self.pmu.events = {0: ['test', 'test']}
+        TestPMUCounter(self.pmu, self.pmu.device.TEST1.TESTA)
+        TestPMUCounter(self.pmu, self.pmu.device.TEST1.TESTB)
+
+        cnt = self.pmu.enable_event(0)
+        self.assertEqual(cnt, self.pmu.get_counters()['TESTA'])
+
+        cnt = self.pmu.enable_event(0)
+        self.assertEqual(cnt, self.pmu.get_counters()['TESTB'])
+
+        with self.assertRaises(Exception):
+            cnt = self.pmu.enable_event(0)
+
+    def test_disable_event(self):
+        self.pmu.events = {0: ['test', 'test']}
+        TestPMUCounter(self.pmu, self.pmu.device.TEST1.TESTA)
+        TestPMUCounter(self.pmu, self.pmu.device.TEST1.TESTB)
+
+        cnt = self.pmu.enable_event(0)
+        self.assertEqual(cnt, self.pmu.get_counters()['TESTA'])
+
+        self.pmu.disable_event(cnt)
+        self.assertFalse(cnt.allocated)
+
 class PMUEventTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(self):
@@ -195,16 +225,16 @@ class PMUEventTestCase(unittest.TestCase):
 
     def test_enable_disable(self):
         self.perf_event1.enable()
-        self.assertTrue(self.pmu.enabled)
+        self.assertTrue(self.pmu.en)
         self.perf_event1.disable()
 
         self.perf_event1.enable()
         self.perf_event2.enable()
-        self.assertTrue(self.pmu.enabled)
+        self.assertTrue(self.pmu.en)
         self.perf_event2.disable()
-        self.assertTrue(self.pmu.enabled)
+        self.assertTrue(self.pmu.en)
         self.perf_event1.disable()
-        self.assertFalse(self.pmu.enabled)
+        self.assertFalse(self.pmu.en)
 
     def test_get_value(self):
         value = self.perf_event1.get_value()

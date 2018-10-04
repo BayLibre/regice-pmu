@@ -30,6 +30,8 @@
     and the PMU. Many methods must be implemented in architecture files.
 """
 
+import warnings
+
 class PMUCounter:
     """
         A class to manage one PMU counter
@@ -42,9 +44,25 @@ class PMUCounter:
         :param register: A RegiceObject object to use to read the register
     """
 
-    def __init__(self, pmu, register):
+    def __init__(self, pmu, register, support_event=False):
         pmu.counters[register.name] = self
         self.register = register
+        self.support_event = support_event
+        self.event_id = None
+        self.allocated = False
+        self.pmu = pmu
+
+    def _enable(self):
+        pass
+
+    def _disable(self):
+        pass
+
+    def _enabled(self):
+        raise NotImplementedError
+
+    def _set_event(self, event_id):
+        raise NotImplementedError
 
     def read(self):
         """
@@ -62,7 +80,11 @@ class PMUCounter:
             This could be left unimplemented if the counter can't
             be individually enabled.
         """
-        pass
+        if self.support_event and self.event_id is None:
+            warnings.warn("Trying to enable  {} without an assigned event".
+                          format(str(self)))
+            return False
+        return self._enable()
 
     def disable(self):
         """
@@ -72,7 +94,35 @@ class PMUCounter:
             This could be left unimplemented if the counter can't
             be individually managed.
         """
-        pass
+        self._disable()
+
+    def enabled(self):
+        """
+            Return True if the counter is enabled
+
+            :return: True if the counter is enabled, False otherwise
+        """
+        return self._enabled()
+
+    def set_event(self, event_id):
+        """
+            Assign an event to the counter
+
+            :param event_id: The id of the event to set
+            :return: True in case of success, False otherwise
+        """
+        if not self.support_event:
+            warnings.warn("{} Doesn't support events.".format(str(self)))
+            return False
+        if self.enabled():
+            warnings.warn("Trying to change {}'s' event while it is enabled".
+                          format(str(self)))
+            return False
+        if not event_id in self.pmu.events:
+            warnings.warn("Trying to set an invalid event")
+            return False
+        self.event_id = event_id
+        return self._set_event(event_id)
 
     def __str__(self):
         """
@@ -82,7 +132,12 @@ class PMUCounter:
 
             :return: The name of the counter
         """
-        return self.register.name
+        if not self.support_event:
+            return self.register.name
+        if self.event_id is not None:
+            return "{} -> {}".format(self.register.name,
+                                     self.pmu.events[self.event_id][0])
+        return "{}: (Unallocated)".format(self.register.name)
 
 class PMU:
     """
@@ -121,6 +176,9 @@ class PMU:
     def _disable(self):
         raise NotImplementedError
 
+    def _enabled(self):
+        raise NotImplementedError
+
     def enable(self, refcount=False):
         """
             Enable the PMU
@@ -144,6 +202,14 @@ class PMU:
             self.refcount -= 1
         if self.refcount == 0:
             self._disable()
+
+    def enabled(self):
+        """
+            Return True if the PMU is enabled
+
+            :return: True if the PMU is enabled, False otherwise
+        """
+        return self._enabled()
 
     def pause(self):
         """
@@ -188,10 +254,48 @@ class PMU:
         return self.counters[counter_name].read()
 
     def get_events(self):
+        """
+            Return a dictionary of events that could assigned to a counter
+
+            :return: A dictionary of events
+        """
         return self.events
 
-    def enable_event(self, event_id):
-        pass
+    def _alloc_counter(self):
+        for counter_name in self.counters:
+            counter = self.counters[counter_name]
+            if counter.support_event and not counter.allocated:
+                counter.allocated = True
+                return counter
+        raise Exception
 
-    def disable_event(self, event_id):
-        pass
+    def _free_counter(self, counter):
+        counter.allocated = False
+
+    def enable_event(self, event_id):
+        """
+            Enable an event
+
+            This finds a free counter, assigns it an event and enables it.
+
+            :param event_id: The id of the event to enable
+            :return: The counter used to enable the event
+        """
+        counter = self._alloc_counter()
+        if not counter.set_event(event_id):
+            warnings.warn("Failed to assign event {} to {}".
+                          format(self.events[event_id], str(counter)))
+        counter.enable()
+        return counter
+
+    def disable_event(self, counter):
+        """
+            Disable an event
+
+            This disables the counter and release it.
+
+            :param counter: The counter used by the event to disable
+        """
+        counter.disable()
+        counter.set_event(None)
+        self._free_counter(counter)
