@@ -149,7 +149,10 @@ class Perf:
         self.device = device
         for pmu_name in self.device.pmus:
             pmu = self.device.pmus[pmu_name]
-            self.events.update(pmu.perf_events)
+            for event_type in pmu.perf_events:
+                if event_type not in self.events:
+                    self.events[event_type] = {}
+                self.events[event_type].update(pmu.perf_events[event_type])
 
     def get_events(self, event_type=None):
         """
