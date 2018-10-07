@@ -29,6 +29,68 @@
     value to performance value such as CPU load.
 """
 
+class PerfEventType:
+    """
+        Describe PerfEvent properties
+
+        Basically, this is used to describe the properties of a PerfEvent of
+        same type.
+
+        :param name: The name of the event type
+        :param unit: The unit name
+        :param desc: The description of the event type
+        :param limits: The expected minimum and maximum value of a PerfEvent
+    """
+    def __init__(self, name, unit=None, desc=None, limits=None):
+        self.name = name
+        self.unit = unit
+        self.desc = desc
+        self.limits = limits
+
+    def get_name(self):
+        """
+            Return the name of the event type
+
+            :return: The name of event type
+        """
+        return self.name
+
+    def get_desc(self):
+        """
+            Return the description of the event type
+
+            :return: The description of the event type
+        """
+
+    def has_limits(self):
+        """
+            Return True if a range for the event value has been defined.
+
+            :return: True if the event has a range
+        """
+        return self.limits is not None
+
+    def get_limits(self):
+        """
+            Return the range of event value
+
+            :return: A tuple of min and max value the of event could have
+        """
+        if not self.has_limits():
+            return None, None
+        return self.limits[0], self.limits[1]
+
+    def get_unit(self):
+        """
+            Return the name of unit of the event
+
+            :return: the name of the unit, usually in short form or an empty
+                     string if there is no unit
+        """
+        if self.unit:
+            return self.unit
+        return ''
+
 class PerfEvent:
     """
         A class to read and process PMU counters
@@ -37,16 +99,15 @@ class PerfEvent:
         Basically, this can enable the PMU and its counters, read them,
         and compute human readable performance values such as CPU load.
     """
-    def __init__(self, pmu, perf_type, name):
-        self.type = perf_type
-        self.name = name
-        self.unit = None
-        self.yrange = []
-        self.delay = 0
+    def __init__(self, pmu, event_type, event_name=None):
+        self.event_type = Perf.event_types[event_type]
         self.pmu = pmu
-        if not perf_type in pmu.perf_events:
-            pmu.perf_events[perf_type] = {}
-        pmu.perf_events[perf_type][name] = self
+        if event_name is None:
+            event_name = self.event_type.get_name()
+        self.name = event_name
+        if not event_type in pmu.perf_events:
+            pmu.perf_events[event_type] = {}
+        pmu.perf_events[event_type][event_name] = self
 
     def _enable(self):
         pass
@@ -85,24 +146,6 @@ class PerfEvent:
         """
         raise NotImplementedError
 
-    def has_range(self):
-        """
-            Return True if a range for the event value has been defined.
-
-            :return: True if the event has a range
-        """
-        return self.yrange
-
-    def get_range(self):
-        """
-            Return the range of event value
-
-            :return: A tuple of min and max value the of event could have
-        """
-        if not self.has_range():
-            return None, None
-        return self.yrange[0], self.yrange[1]
-
     def get_name(self):
         """
             Return the name of the event
@@ -111,6 +154,30 @@ class PerfEvent:
         """
         return self.name
 
+    def get_event_type(self):
+        """
+            Return the type of the event
+
+            :return: A PerfEventType object
+        """
+        return self.event_type
+
+    def has_range(self):
+        """
+            Return True if a range for the event value has been defined.
+
+            :return: True if the event has a range
+        """
+        return self.event_type.has_limits()
+
+    def get_range(self):
+        """
+            Return the range of event value
+
+            :return: A tuple of min and max value the of event could have
+        """
+        return self.event_type.get_limits()
+
     def get_unit(self):
         """
             Return the name of unit of the event
@@ -118,25 +185,15 @@ class PerfEvent:
             :return: the name of the unit, usually in short form or an empty
                      string if there is no unit
         """
-        if self.unit:
-            return self.unit
-        return ''
+        return self.event_type.get_unit()
 
 class CPULoad(PerfEvent):
     def __init__(self, pmu, cpu_id):
-        if cpu_id is not None:
-            name = "CPU {} load".format(cpu_id)
-        else:
-            name = "CPU load"
-        super(CPULoad, self).__init__(pmu, Perf.CPU_LOAD, name)
-        self.yrange = [0, 100]
-        self.unit = '%'
+        super(CPULoad, self).__init__(pmu, Perf.CPU_LOAD, "CPU " + str(cpu_id))
 
 class MemoryLoad(PerfEvent):
     def __init__(self, pmu):
-        super(MemoryLoad, self).__init__(pmu, Perf.MEMORY_LOAD, "Memory load")
-        self.yrange = [0, 100]
-        self.unit = '%'
+        super(MemoryLoad, self).__init__(pmu, Perf.MEMORY_LOAD)
 
 class Perf:
     """
@@ -144,6 +201,15 @@ class Perf:
     """
     CPU_LOAD = 1
     MEMORY_LOAD = 2
+    event_types = {
+        CPU_LOAD:
+            PerfEventType('CPU load', unit='%', limits=[0, 100],
+                          desc='Show the cpu load scaled to current cpu frequency'),
+        MEMORY_LOAD:
+            PerfEventType('Memory load', unit='%', limits=[0, 100],
+                          desc='Show the cpu load at current cpu frequency')
+        }
+
     def __init__(self, device):
         self.events = {}
         self.device = device
@@ -215,3 +281,12 @@ class Perf:
         if not event:
             raise ValueError
         return event.get_value()
+
+    def get_event_type(self, event_type):
+        """
+            Return an PerfEventType object
+
+            :param event_type: The id of the PerfEventType object
+            :return: A PerfEventType object
+        """
+        return self.event_types[event_type]
