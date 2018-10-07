@@ -51,6 +51,7 @@ class PMUCounter:
         self.event_id = None
         self.allocated = False
         self.pmu = pmu
+        self.value = 0
 
     def _enable(self):
         pass
@@ -72,6 +73,26 @@ class PMUCounter:
         """
         return int(self.register)
 
+    def read_diff(self):
+        """
+            Return the difference between to successive read
+
+            This returns the how much the counter has been incremented
+            between to read. This also catch and handle overflows.
+
+            :return: the counter increment
+        """
+        value = self.read()
+        if self.value > value:
+            overflow = value + (1 << self.register.size)
+            diff = overflow - self.value
+        else:
+            diff = value - self.value
+        self.value = value
+
+        return diff
+
+
     def enable(self):
         """
             Enable the counter and the PMU
@@ -84,6 +105,7 @@ class PMUCounter:
             warnings.warn("Trying to enable  {} without an assigned event".
                           format(str(self)))
             return False
+        self.value = self.read()
         return self._enable()
 
     def disable(self):
