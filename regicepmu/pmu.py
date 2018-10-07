@@ -266,6 +266,15 @@ class PMU:
         """
         return self.counters
 
+    def get_counter(self, counter_name):
+        """
+            Get a counter by name
+
+            :param counter_name: The name of counter to get
+            :return: A PMUCounter object
+        """
+        return self.counters[counter_name]
+
     def read(self, counter_name):
         """
             Read the value from a counter
@@ -273,7 +282,7 @@ class PMU:
             :param counter_name: The name of counter to read from
             :return: The value of counter
         """
-        return self.counters[counter_name].read()
+        return self.get_counter(counter_name)
 
     def get_events(self):
         """
