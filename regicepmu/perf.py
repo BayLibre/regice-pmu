@@ -195,19 +195,28 @@ class MemoryLoad(PerfEvent):
     def __init__(self, pmu):
         super(MemoryLoad, self).__init__(pmu, Perf.MEMORY_LOAD)
 
+class VendorEvent(PerfEvent):
+    def __init__(self, pmu, cpu_id, vendor_id):
+        name = "CPU {} {}".format(cpu_id, vendor_id)
+        super(VendorEvent, self).__init__(pmu, Perf.VENDOR, name)
+        self.vendor_id = vendor_id
+
 class Perf:
     """
         A class to manage perf events
     """
     CPU_LOAD = 1
     MEMORY_LOAD = 2
+    VENDOR = 0x1000
     event_types = {
         CPU_LOAD:
             PerfEventType('CPU load', unit='%', limits=[0, 100],
                           desc='Show the cpu load scaled to current cpu frequency'),
         MEMORY_LOAD:
             PerfEventType('Memory load', unit='%', limits=[0, 100],
-                          desc='Show the cpu load at current cpu frequency')
+                          desc='Show the cpu load at current cpu frequency'),
+        VENDOR:
+            PerfEventType('Vendor event'),
         }
 
     def __init__(self, device):
@@ -232,7 +241,10 @@ class Perf:
         """
         events = []
         if event_type is not None:
-            events += self.events[event_type].values()
+            if event_type <= self.VENDOR:
+                events += self.events[event_type].values()
+            else:
+                events += self.get_vendor_events(event_type - self.VENDOR)
         else:
             for _event_type in self.events:
                 events += self.events[_event_type].values()
@@ -289,4 +301,14 @@ class Perf:
             :param event_type: The id of the PerfEventType object
             :return: A PerfEventType object
         """
+        if event_type > self.VENDOR:
+            event_type = self.VENDOR
         return self.event_types[event_type]
+
+    def get_vendor_events(self, event_id):
+        vendor_events = []
+        events = self.get_events(self.VENDOR)
+        for event in events:
+            if event.vendor_id == event_id:
+                vendor_events.append(event)
+        return vendor_events
