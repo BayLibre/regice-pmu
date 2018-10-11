@@ -140,7 +140,7 @@ class PMUCounter:
             warnings.warn("Trying to change {}'s' event while it is enabled".
                           format(str(self)))
             return False
-        if not event_id in self.pmu.events:
+        if event_id is not None and event_id not in self.pmu.events:
             warnings.warn("Trying to set an invalid event")
             return False
         self.event_id = event_id
