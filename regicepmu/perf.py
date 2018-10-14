@@ -215,7 +215,7 @@ class Perf:
                           desc='Show the cpu load scaled to current cpu frequency'),
         MEMORY_LOAD:
             PerfEventType('Memory load', unit='%', limits=[0, 100],
-                          desc='Show the cpu load at current cpu frequency'),
+                          desc='Show the memory load'),
         VENDOR:
             PerfEventType('Vendor event'),
         }
