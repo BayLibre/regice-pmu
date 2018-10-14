@@ -45,6 +45,11 @@ setup(
         'git+https://github.com/BayLibre/libregice.git#egg=LibRegice',
         'git+https://github.com/BayLibre/regice-common.git#egg=RegiceCommon',
     ],
+    entry_points={
+        'regice': [
+                'init_device_args = regicepmu.plugin:init_device_args',
+        ]
+    },
 )
 
 setup(

@@ -188,6 +188,14 @@ class PerfEvent:
         """
         return self.event_type.get_unit()
 
+    def get_desc(self):
+        """
+            Return the description of the event
+
+            :return: The description of the event
+        """
+        return self.event_type.get_desc()
+
 class CPULoad(PerfEvent):
     def __init__(self, pmu, cpu_id):
         super(CPULoad, self).__init__(pmu, Perf.CPU_LOAD, "CPU " + str(cpu_id))
