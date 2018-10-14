@@ -61,6 +61,7 @@ class PerfEventType:
 
             :return: The description of the event type
         """
+        return self.desc
 
     def has_limits(self):
         """
