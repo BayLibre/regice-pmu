@@ -205,8 +205,7 @@ class MemoryLoad(PerfEvent):
         super(MemoryLoad, self).__init__(pmu, Perf.MEMORY_LOAD)
 
 class VendorEvent(PerfEvent):
-    def __init__(self, pmu, cpu_id, vendor_id):
-        name = "CPU {} {}".format(cpu_id, vendor_id)
+    def __init__(self, pmu, name, vendor_id):
         super(VendorEvent, self).__init__(pmu, Perf.VENDOR, name)
         self.vendor_id = vendor_id
 
