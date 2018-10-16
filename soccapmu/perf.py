@@ -215,11 +215,15 @@ class Perf:
     """
     CPU_LOAD = 1
     MEMORY_LOAD = 2
+    CPU_USAGE = 3
     VENDOR = 0x1000
     event_types = {
         CPU_LOAD:
             PerfEventType('CPU load', unit='%', limits=[0, 100],
                           desc='Show the cpu load scaled to current cpu frequency'),
+        CPU_USAGE:
+            PerfEventType('CPU usage', unit='%', limits=[0, 100],
+                          desc='Show the cpu load scaled to higher frequency supported by cpu'),
         MEMORY_LOAD:
             PerfEventType('Memory load', unit='%', limits=[0, 100],
                           desc='Show the memory load'),

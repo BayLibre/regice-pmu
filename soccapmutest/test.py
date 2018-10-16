@@ -25,13 +25,13 @@
 
 import unittest
 
-from libregice.regiceclienttest import RegiceClientTest
-from libregice.device import Device
-from regicetest import open_svd_file
+from libsocca.soccaclienttest import SoccaClientTest
+from libsocca.device import Device
+from soccatest import open_svd_file
 from svd import SVDText
 
-from regicepmu.perf import *
-from regicepmu.pmu import *
+from soccapmu.perf import *
+from soccapmu.pmu import *
 
 class TestPMUCounter(PMUCounter):
     def __init__(self, pmu, register):
@@ -84,7 +84,7 @@ class PMUCounterTestCase(unittest.TestCase):
         file = open_svd_file('test.svd')
         svd = SVDText(file.read())
         svd.parse()
-        self.client = RegiceClientTest()
+        self.client = SoccaClientTest()
         self.dev = Device(svd, self.client)
         self.memory = self.client.memory
 
@@ -121,7 +121,7 @@ class PMUTestCase(unittest.TestCase):
         file = open_svd_file('test.svd')
         svd = SVDText(file.read())
         svd.parse()
-        self.client = RegiceClientTest()
+        self.client = SoccaClientTest()
         self.dev = Device(svd, self.client)
         self.memory = self.client.memory
 
@@ -212,7 +212,7 @@ class PMUEventTestCase(unittest.TestCase):
         file = open_svd_file('test.svd')
         svd = SVDText(file.read())
         svd.parse()
-        self.client = RegiceClientTest()
+        self.client = SoccaClientTest()
         self.dev = Device(svd, self.client)
         self.memory = self.client.memory
 
@@ -268,7 +268,7 @@ class PerfTestCase(unittest.TestCase):
         file = open_svd_file('test.svd')
         svd = SVDText(file.read())
         svd.parse()
-        self.client = RegiceClientTest()
+        self.client = SoccaClientTest()
         self.dev = Device(svd, self.client)
         self.memory = self.client.memory
 

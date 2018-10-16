@@ -10,14 +10,14 @@ before_script:
 
 test:
   script:
-  - python -m regicepmutest.test
+  - python -m soccapmutest.test
 
 full_test:
   stage: test
   script:
-  - git clone https://gitlab.com/abailon/regice-tests.git
-  - cd regice-tests; ./setup.py install; cd ..
-  - python -m regicetests.test
+  - git clone https://gitlab.com/abailon/socca-tests.git
+  - cd socca-tests; ./setup.py install; cd ..
+  - python -m soccatests.test
   artifacts:
     paths:
     - htmlcov
@@ -27,7 +27,7 @@ lint:
   script:
   - mkdir out
   - pip install pylint-exit pylint-json2html
-  - pylint -f json regicepmutest > out/pylint.json || pylint-exit $?
+  - pylint -f json soccapmutest > out/pylint.json || pylint-exit $?
   - pylint-json2html -o out/pylint.html out/pylint.json
   artifacts:
     paths:

@@ -41,7 +41,7 @@ class PMUCounter:
         individually.
         This provides many methods to read and manage one PMU counter.
         :param pmu: A PMU object (e.g the owner of the counter)
-        :param register: A RegiceObject object to use to read the register
+        :param register: A SoccaObject object to use to read the register
     """
 
     def __init__(self, pmu, register, support_event=False):

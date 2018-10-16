@@ -25,7 +25,7 @@
 
 import re
 
-from regicepmu.perf import Perf
+from soccapmu.perf import Perf
 
 def init_device_args(device, parser):
     """
